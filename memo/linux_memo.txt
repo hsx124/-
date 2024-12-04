@@ -1,0 +1,12 @@
+cd
+pwd
+touch
+cat
+more
+less
+cp
+mv
+rm -r -f
+tar -zcvf ファイル名.tar.gz 圧縮ファイル名
+tar -xvf tar.gzファイル名
+ssh

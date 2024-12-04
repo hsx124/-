@@ -1,0 +1,148 @@
+redis.windows.conf配置文件
+
+★命令操作
+redis的数据结构：redis储存的是key，value格式的数据，
+其中key是字符串，value有字符串（String），哈希类型（hash），列表类型（list），集合类型（set），有序集合类型（sortedset）
+
+字符串（String）
+存储：set key value
+获取：get key
+删除：del key
+
+哈希类型（hash）
+存储：hset key field value
+获取：hget key field -> 获取指定的field对应的值
+	hgetall key -> 获取所有的field和value
+删除：hdel key field
+
+列表类型（list） 可以添加一个元素到列表的头部（左边）或者尾部（右边）
+添加：lpush key value 将元素加入列表左边
+	rpush key value 将元素加入列表右边
+获取：lrange key start end 范围获取 0 -1 获取所有
+删除：lpop key 删除列表最左边的元素并返回
+删除：rpop key 删除列表最右边的元素并返回
+
+集合类型（set）不允许重复
+存储：sadd key value
+获取：smembers key
+删除：srem key value
+
+有序集合类型（sortedset）不允许重复且元素有序
+存储：zadd key score value
+获取：zrange key start end
+删除：zrem key value
+zrange key 0 -1 withscores
+
+通用命令
+keys * :查询所有键
+type key ：获取键对应的value的类型
+del key
+
+★持久化
+RDB默认方式
+每隔一定的时间检测key的变化
+编辑redis.windows.conf
+after 5 sec if at least 1 keys changed
+修改save 5 1
+然后以cmd方式启动redis加参数redis.windows.conf
+G:\Redis>redis-server.exe redis.windows.conf
+
+AOF日志记录方式
+编辑redis.windows.conf
+appendonly no(关闭AOF) appendonly yes(开户AOF)
+
+# appendfsync always  每一次操作都进行持久化
+appendfsync everysec  每隔一秒进行一次持久化
+# appendfsync no      不进行持久化
+
+★Jedis
+<dependency>
+	<groupId>redis.clients</groupId>
+	<artifactId>jedis</artifactId>
+	<version>3.3.0</version>
+</dependency>
+
+public class JedisTest {
+	public static void main(String[] args) {
+		Jedis jedis = new Jedis("localhost", 6379);
+		jedis.set("name", "testuser");
+		jedis.close();
+	}
+}
+
+String结构
+@Test
+public void test001() {
+	Jedis js = new Jedis();//空参构造默认指定本地localhost，端口6379
+	js.set("username", this.getClass().getSimpleName());
+	//设置key为code的值存储10秒然后自动删除。。。
+	js.setex("code", 10, "this is a test..");
+	js.close();
+}
+
+hash
+@Test
+public void test001() {
+	Jedis js = new Jedis();
+	js.hset("user", "name", "tom");
+	js.hset("user", "age", "28");
+	js.hset("user", "address", "american");
+	System.out.println(js.hget("user", "address"));
+	js.hgetAll("user").forEach((k, v) -> System.out.println(k + "=" + v));
+	js.close();
+}
+
+list
+@Test
+public void test001() {
+	Jedis js = new Jedis();
+	js.del("data");
+	js.lpush("data", "a", "b", "c");
+	js.rpush("data", "a", "b", "c");
+	js.lrange("data", 0, -1).forEach(System.out::println);
+	System.out.println("------------------------------");
+	System.out.println(js.lpop("data"));
+	System.out.println(js.rpop("data"));
+	js.close();
+}
+
+set
+@Test
+public void test001() {
+	Jedis js = new Jedis();
+	js.sadd("language", "java","vb.net","python","C#","go");
+	js.smembers("language").forEach(System.out::println);
+	js.close();
+}
+
+sortedset
+@Test
+public void test001() {
+	Jedis js = new Jedis();
+	js.zadd("subject", 50d, "chinese");
+	js.zadd("subject", 60d, "japanese");
+	js.zadd("subject", 55d, "english");
+	js.zadd("subject", 80d, "history");
+	js.zrange("subject", 0, -1).forEach(System.out::println);
+	js.keys("*").forEach(System.out::println);
+	js.close();
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////
+连接池
+@Test
+public void test001() {
+	JedisPoolConfig config = new JedisPoolConfig();
+	config.setMaxTotal(50);
+	config.setMaxIdle(20);
+	JedisPool pool = new JedisPool(config);
+	Jedis jedis = pool.getResource();
+	jedis.set("date", LocalDateTime.now().toString());
+	System.out.println(jedis.get("date"));
+	pool.close();
+}
+
+
+
+
+

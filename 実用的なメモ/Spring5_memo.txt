@@ -1,0 +1,979 @@
+補足
+ResourceBundle
+・propertiesファイルの読み取り
+・書き込み不可
+・ClassPath配下の者のみ読み取れる
+fileName = packageName+.+fileName
+ResourceBundle bundle = ResourceBundle.getBundle("config.bean");
+
+bean.xml
+
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+	<!-- 
+		默认构造函数创建
+		根据Bean标签让Spring创建指定对象的实例
+		id 唯一标识
+		class 类的全限定类名
+	-->
+	<bean id="acounttDao" class="cn.hsx124.dao.impl.AccountDAOImpl" />
+	<bean id="acountService" class="cn.hsx124.service.impl.AccountServiceImpl"></bean>
+</beans>
+
+@Test
+public void test002(){
+	ApplicationContext ac = new ClassPathXmlApplicationContext("bean.xml");
+	IAccountDAO dao = (IAccountDAO) ac.getBean("acounttDao");
+	IAccountService service = ac.getBean("acountService", IAccountService.class);
+	System.out.println(dao);
+	System.out.println(service);
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+ApplicationContext立即加载 BeanFactory延迟加载
+
+静态工厂创建实例，方法静态
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+	<bean id="staticMethd" class="cn.hsx124.factory.StaticBeanFactory" factory-method="getStaticBean"></bean>
+</beans>
+
+import cn.hsx124.dao.impl.AccountDAOImpl;
+
+public class StaticBeanFactory {
+	public static Object getStaticBean() {
+		return new AccountDAOImpl();
+	}
+}
+
+@Test
+public void test002(){
+	ApplicationContext ac = new ClassPathXmlApplicationContext("bean.xml");
+	IAccountDAO staticDao = (IAccountDAO) ac.getBean("staticMethd");
+	System.out.println(staticDao);
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+静态实例工厂创建实例
+
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+	<bean id="acounttDao" class="cn.hsx124.dao.impl.AccountDAOImpl" />
+	<bean id="staticDao" class="cn.hsx124.factory.StaticBeanFactory" />
+	<!-- 
+	factory-bean:工厂实例id
+	-->
+	<bean id="ss" factory-bean="staticDao" factory-method="getBean"></bean>
+</beans>
+
+%StaticBeanFactory.java
+import cn.hsx124.dao.impl.AccountDAOImpl;
+public class StaticBeanFactory {
+	public Object getBean() {
+		return new AccountDAOImpl();
+	}
+}
+
+@Test
+public void test002(){
+	ApplicationContext ac = new ClassPathXmlApplicationContext("bean.xml");
+	IAccountDAO staticDao = (IAccountDAO) ac.getBean("ss");
+	System.out.println(staticDao);
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+bean的作用范围
+bean标签的scope属性 
+singleton 单例范围 默认
+prototype 多例 request session global-session
+
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+	<bean id="beanLife" class="cn.hsx124.factory.StaticBeanFactory"
+		init-method="init" destroy-method="destory"></bean>
+</beans>
+
+public class StaticBeanFactory {
+	public void init(){
+		System.out.println("init.....");
+	}
+	public void destory(){
+		System.out.println("destory....");
+	}
+	public Object getBean() {
+		return new AccountDAOImpl();
+	}
+	public static Object getStaticBean() {
+		return new AccountDAOImpl();
+	}
+}
+
+@Test
+public void test003() {
+	ApplicationContext ac = new ClassPathXmlApplicationContext("bean.xml");
+	IAccountDAO dao = (IAccountDAO) ac.getBean("beanLife");
+	System.out.println(dao);
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+Spring依赖注入
+
+根据构造函数方式注入
+基本类型与String
+其他的Bean类型
+其他的复杂类型
+<constructor-arg>该标签写在bean标签内
+标签属性
+Type-指定要注入的构造函数的参数类型
+index-指定要注入的构造函数的参数索引位置
+name-指定参数在构造函数中的名称
+value-指定注入的数据内容，他只能指定基本类型数据和String
+ref-指定其他bean类型数据，写的是其他存在Spring容器中的bean的id
+
+bean.xml
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+	<bean id="test" class="cn.hsx124.service.impl.AccountServiceImpl">
+		<constructor-arg name="count" value="100"></constructor-arg>
+		<constructor-arg name="acountName" value="testuser"></constructor-arg>
+		<constructor-arg name="salary" value="150.0"></constructor-arg>
+		<constructor-arg name="day" ref="now"></constructor-arg>
+	</bean>
+	<bean id="now" class="java.util.Date"></bean>
+</beans>
+
+AccountServiceImpl.java
+public class AccountServiceImpl implements IAccountService {
+	private Integer count;
+	private String acountName;
+	private Double salary;
+	private Date day;
+	 
+	public AccountServiceImpl(Integer count, String acountName, Double salary, Date day) {
+		super();
+		this.count = count;
+		this.acountName = acountName;
+		this.salary = salary;
+		this.day = day;
+	}
+	@Override
+	public void saveAccount() throws Exception {
+		System.out.println(this.count + this.acountName + this.salary + this.day);
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+使用set方法注入
+<property>标签该标签写在bean标签内
+name-指定set方法的名称
+value-指定注入的数据内容，他只能指定基本类型数据和String
+ref-指定其他bean类型数据，写的是其他存在Spring容器中的bean的id
+
+bean.xml
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+	<bean id="setTest" class="cn.hsx124.service.impl.AccountServiceImpl">
+		<property name="count" value="11111"></property>
+		<property name="acountName" value="settestuuser"></property>
+		<property name="salary" value="9999.999"></property>
+		<property name="day" ref="now"></property>
+	</bean>
+	<bean id="now" class="java.util.Date"></bean>
+</beans>
+
+AccountServiceImpl.java
+public class AccountServiceImpl implements IAccountService {
+	private Integer count;
+	private String acountName;
+	private Double salary;
+	private Date day;
+	
+	public void setCount(Integer count) {
+		this.count = count;
+	}
+	public void setAcountName(String acountName) {
+		this.acountName = acountName;
+	}
+	public void setSalary(Double salary) {
+		this.salary = salary;
+	}
+	public void setDay(Date day) {
+		this.day = day;
+	}
+	@Override
+	public void saveAccount() throws Exception {
+		System.out.println(this.count + this.acountName + this.salary + this.day);
+	}
+}
+
+@Test
+public void test003() throws Exception {
+	ApplicationContext ac = new ClassPathXmlApplicationContext("bean.xml");
+	AccountServiceImpl as = (AccountServiceImpl) ac.getBean("setTest");
+	as.saveAccount();
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+使用P名称空间注入
+xml中导入P名称空间
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:p="http://www.springframework.org/schema/p"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+	<bean id="pTest" class="cn.hsx124.service.impl.AccountServiceImpl"
+		p:count="1888" 
+		p:acountName="ptestuser" 
+		p:salary="8888.77" 
+		p:day-ref="now">
+	</bean>
+	<bean id="now" class="java.util.Date"></bean>
+</beans>
+
+@Test
+public void test003() throws Exception {
+	ApplicationContext ac = new ClassPathXmlApplicationContext("bean.xml");
+	AccountServiceImpl as = (AccountServiceImpl) ac.getBean("pTest");
+	as.saveAccount();
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+集合类型的注入
+结合相同，标签可以互换
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:p="http://www.springframework.org/schema/p"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+	<bean id="collect" class="cn.hsx124.service.impl.AccountServiceImpl">
+		<property name="strs">
+			<array>
+				<value>AAAA</value>
+				<value>BBBB</value>
+				<value>CCCC</value>
+			</array>
+		</property>
+		<property name="datas">
+			<list>
+				<value>DDDD</value>
+				<value>EEEE</value>
+				<value>FFFF</value>
+			</list>
+		</property>
+		<property name="setStr">
+			<set>
+				<value>GGGG</value>
+				<value>HHHH</value>
+				<value>IIII</value>
+			</set>
+		</property>
+		<property name="maps">
+			<map>
+				<entry key="AB" value="AAABBBB"></entry>
+				<entry key="CD" value="AAABBBB"></entry>
+				<entry key="EF" value="AAABBBB"></entry>
+			</map>
+		</property>
+		<property name="pros">
+			<props>
+				<prop key="JK">JJJJJJJKKKKKKKK</prop>
+				<prop key="QW">JJJJJJJKKKKKKKK</prop>
+				<prop key="ER">JJJJJJJKKKKKKKK</prop>
+			</props>
+		</property>
+	</bean>
+</beans>
+
+public class AccountServiceImpl implements IAccountService {
+	private String[] strs;
+	private List<String> datas;
+	private Set<String> setStr;
+
+	public void setStrs(String[] strs) {
+		this.strs = strs;
+	}
+
+	public void setDatas(List<String> datas) {
+		this.datas = datas;
+	}
+
+	public void setSetStr(Set<String> setStr) {
+		this.setStr = setStr;
+	}
+
+	public void setMaps(Map<String, String> maps) {
+		this.maps = maps;
+	}
+
+	public void setPros(Properties pros) {
+		this.pros = pros;
+	}
+
+	private Map<String, String> maps;
+	private Properties pros;
+
+	@Override
+	public void saveAccount() throws Exception {
+		System.out
+				.println("AccountServiceImpl\n [strs=" + Arrays.toString(strs) + ",\n datas=" + datas + ",\n setStr=" + setStr + ",\n maps=" + maps
+						+ ",\n pros=" + pros + "]");
+	}
+}
+
+@Test
+public void test003() throws Exception {
+	ApplicationContext ac = new ClassPathXmlApplicationContext("bean.xml");
+	AccountServiceImpl as = (AccountServiceImpl) ac.getBean("collect");
+	as.saveAccount();
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+基于注解的注入
+xml导入context名称空间
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:p="http://www.springframework.org/schema/p"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.3.xsd">
+	<!-- 配置要扫描的包 
+		base-package="cn.hsx124" 扫描cn.hsx124下的包以及子包
+	-->
+	<context:component-scan base-package="cn.hsx124"></context:component-scan>
+</beans>
+
+用于创建对象
+@Component作用相当于xml文件当中的bean标签
+		  属性value用于指定bean的id，不写时默认当前类名首字母小写
+		  例如deptServiceImpl
+		  
+此注解衍生三个注解
+@Controller用于控制层
+@Service用于业务层
+@Repository用于持久层
+这三个注解的作用与属性与Component完全一样
+
+@Service("service")
+public class DeptServiceImpl implements IDeptService {
+	@Autowired
+	private IDeptDAO dao;
+
+	@Override
+	public List<Dept> selectAll() throws Exception {
+		return dao.selectAll();
+	}
+}
+
+@Repository("dao")
+public class DeptDAOImpl implements IDeptDAO {
+	@Override
+	public List<Dept> selectAll() throws Exception {
+		return DBUtil.query(Dept.class, "select * from dept");
+	}
+}
+
+
+用于注入的
+@Autowired
+作用：自动按照类型注入，只要容器中有唯一类型匹配就直接注入成功
+	使用此注解时不用set方法
+	
+@Service("service")
+public class DeptServiceImpl implements IDeptService {
+	@Autowired
+	private IDeptDAO dao;//当有多个匹配时，注入的id名要与对象的id名一致
+
+	@Override
+	public List<Dept> selectAll() throws Exception {
+		return dao.selectAll();
+	}
+}
+
+DeptDAOImpl.java
+@Repository("dao")
+public class DeptDAOImpl implements IDeptDAO {
+	@Override
+	public List<Dept> selectAll() throws Exception {
+		return DBUtil.query(Dept.class, "select * from dept");
+	}
+}
+
+DeptDAOImpl2.java
+@Repository("dao2")
+public class DeptDAOImpl implements IDeptDAO {
+	@Override
+	public List<Dept> selectAll() throws Exception {
+		return DBUtil.query(Dept.class, "select * from dept");
+	}
+}
+
+@Qualifier
+作用：在@Autowired的基础上再按照bean的id注入，在类成员注入的时不能单独使用。属性value指定bean的id
+@Service("service")
+public class DeptServiceImpl implements IDeptService {
+	@Autowired
+	@Qualifier("dao2")
+	private IDeptDAO deptDao;
+
+	@Override
+	public List<Dept> selectAll() throws Exception {
+		return deptDao.selectAll();
+	}
+}
+
+@Resoure直接按照bean的id注入→建议使用
+@Service("service")
+public class DeptServiceImpl implements IDeptService {
+	@Resource(name="dao2")
+	private IDeptDAO deptDao;
+
+	@Override
+	public List<Dept> selectAll() throws Exception {
+		return deptDao.selectAll();
+	}
+}
+
+@Value用于注入基本类型和String，支持Spring的El表达式
+表达式写法：${表达式}
+在bean.xml里配置导入的properties文件路径
+
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:p="http://www.springframework.org/schema/p"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.3.xsd">
+	<context:component-scan base-package="cn.hsx124"></context:component-scan>
+	<context:property-placeholder location="db_info.properties"/>
+</beans>
+
+@Service("service")
+public class DeptServiceImpl implements IDeptService {
+	@Resource(name = "dao2")
+	private IDeptDAO deptDao;
+	@Value("${jdbc.driver}")
+	String driver;
+	@Value("${jdbc.url}")
+	String url;
+	@Value("${jdbc.user}")
+	String user;
+	@Value("${jdbc.password}")
+	String password;
+
+	@Override
+	public List<Dept> selectAll() throws Exception {
+		System.out.println(this.driver + "," + this.url + "," + this.user + "," + this.password);
+		return deptDao.selectAll();
+	}
+}
+
+@Scope用于改变bean的作用范围
+用于生命周期的注解
+@PostContruct
+用于指定初始化方法，和配置文件中的init-method属性一样
+@PreDestroy
+用于指定销毁方法，和配置文件中的destroy-method属性一样
+
+DeptServiceImpl.java
+Service("service")
+@Scope("singleton")
+public class DeptServiceImpl implements IDeptService {
+	@Resource(name = "dao2")
+	private IDeptDAO deptDao;
+	@PostConstruct
+	public void start() {
+		System.out.println("start method .....");
+	}
+	@PreDestroy
+	public void end() {
+		System.out.println("end method ....");
+	}
+	@Override
+	public List<Dept> selectAll() throws Exception {
+		return deptDao.selectAll();
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+使用注解向静态成员注入时，要提供set方法同时注解要写在set方法上
+@Service("service")
+@Scope("singleton")
+public class DeptServiceImpl implements IDeptService {
+	private static IDeptDAO deptDao;
+	
+	@Resource(name = "dao")
+	public void setDeptDao(IDeptDAO deptDao) {
+		DeptServiceImpl.deptDao = deptDao;
+	}
+
+	static String driver;
+	
+	@Value("${jdbc.driver}")
+	public void setDriver(String driver) {
+		DeptServiceImpl.driver = driver;
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+@Configuration该注解写在类上表明此类是Spring的配置类
+如果该注解只是运用在AnnotationConfigApplicationContext构造函数中的字节码可以省略
+如果是要加载扫描包时，需要读到此类的配置而又没把此类的字节码提供给AnnotationConfigApplicationContext构造函数,则必须定
+@Bean写在方法上，作用是把当前方法的返回值作为bean对象存入Spring容器之中
+name用于指定bean的id，如果不指定默认当前方法名
+@ComponentScan指定注解要扫描的包以及子包
+@PropertySource指定配置文件的classpath
+@Import用于导入其他配置类
+
+SpringConfigruation.java
+@Configuration
+@ComponentScan("cn.hsx124")
+@Import({JdbcConfiguration.class})
+@PropertySource("classpath:db_info.properties")
+public class SpringConfiguration {}
+
+public class JdbcConfiguration {
+	@Value("${driver}")
+	private String driverClass;
+	@Value("${url}")
+	private String jdbcUrl;
+	@Value("${user}")
+	private String user;
+	@Value("${password}")
+	private String password;
+	@Bean(name = "runner")
+	public QueryRunner getQueryRunner(DataSource ds) {
+		return new QueryRunner(ds);
+	}
+	@Bean(name = "dataSource")
+	public DataSource getDataSource() {
+		try {
+			ComboPooledDataSource ds = new ComboPooledDataSource();
+			ds.setDriverClass(driverClass);
+			ds.setJdbcUrl(jdbcUrl);
+			ds.setUser(user);
+			ds.setPassword(password);
+			return ds;
+		} catch (PropertyVetoException e) {
+			e.printStackTrace();
+			throw new RuntimeException(e);
+		}
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+Spring整合Junit
+@Runwith把Junit原有的运行器替换成Spring的
+@ContextConfiguration让Spring运行器知道bean.xml文件的位置
+
+@RunWith(SpringJUnit4ClassRunner.class)
+//@ContextConfiguration(locations = "classpath:bean.xml")
+@ContextConfiguration(classes = SpringConfiguration.class)
+public class Main {
+	@Autowired
+	IDeptService deptDao;
+
+	@Test
+	public void test006() throws Exception {
+		deptDao.selectAll().forEach(System.out::println);
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+Spring Aop
+joinpoint连接点，指的是哪些被拦截到的点，在Spring中，这些点指的是方法，因为Spring只支持方法类型的连接点
+业务层接口中的方法都是连接点。需要增强的方法
+pointCut切入点，指的是要对哪些Joinpoint进行拦截定义。不需要增强的方法
+Advice通知or增强，指拦截到Joinpoint之后要做的事
+通知类型：前置通知，后置通知，异常通知，最终通知，环绕通知
+
+Spring基于xml的配置
+步骤：1.把通知Bean（增强的方法）交于Spring来管理
+	2.使用aop名称空间下的Config标签开始aop的配置
+	3.使用aop:aspect标签开始切面的配置
+		id：用于给切面提供一个唯一的标志
+		ref：用于引用通知bean的id
+	4.使用aop：before配置前置通知
+		method：指定通知类中的哪个方法
+		pointcut：切入点表达式
+			切入点表达式：关键字：execution（表达式）
+				表达式的写法：访问修饰符 返回值 全包名.类名.方法名（参数列表）　→　全匹配方式
+				public void cn.hsx124.util.TransactionManager.begin()
+				访问修饰符可省略
+				void cn.hsx124.util.TransactionManager.begin()
+				返回值可以使用*表示任意返回值 
+				* cn.hsx124.util.TransactionManager.begin()
+				包名可以使用*，表示任意包。但是有几个包，需要写几个*
+				* *.*.*.TransactionManager.begin()
+				包名可以使用..表示当前包及子包
+				* cn.hsx124..TransactionManager.begin()
+				类名可以使用*表示任意类
+				* *..*.begin()
+				方法名可以使用*表示任意方法
+				* *..*.*()
+				参数列表可以指定具体类型
+					基本类型直接写类型名称* *..*.*(int)
+					引用类型必须是包名.类名的方式* *..*.*(java.lang.String)
+				参数列表可以使用*，表示任意参数类型，但是必须有参数
+					* *..*.*(*)
+				参数列表可以使用.. 表示有无参数均可
+					* *..*.*(..)
+bean.xml
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:p="http://www.springframework.org/schema/p"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:aop="http://www.springframework.org/schema/aop"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.3.xsd
+		http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-4.3.xsd">
+
+	<bean id="accountDao" class="cn.hsx124.dao.impl.AccountDAOImpl">
+		<property name="dbutil" ref="db"></property>
+	</bean>
+	
+	<bean id="tran" class="cn.hsx124.util.TransactionManager">
+		<property name="dbutil" ref="db"></property>
+	</bean>
+	
+	<bean id="as" class="cn.hsx124.service.impl.AccountServiceImpl">
+		<property name="dao" ref="accountDao"></property>
+		<property name="tm" ref="tran"></property>
+	</bean>
+	
+	<aop:config>
+		<aop:aspect id="tr" ref="tran">
+			<aop:before method="begin"
+				pointcut="execution(* cn.hsx124.service.*.*(..))" />
+			<aop:after-returning method="commit"
+				pointcut="execution(* cn.hsx124.service.*.*(..))" />
+			<aop:after-throwing method="rollback"
+				pointcut="execution(* cn.hsx124.service.*.*(..))" />
+			<aop:after method="close" pointcut="execution(* cn.hsx124.service.*.*(..))" />
+		</aop:aspect>
+	</aop:config>
+</beans>
+环绕通知
+需要在环绕通知中明确调用一下切入点方法
+Spring提供一个接口ProceedingJoinPoint。该接口可以作为环绕通知的方法参数来使用
+程序运用时Sping框架会为我们注入该接口的实现类
+该接口有个方法Procee（）方法，相当于明确调用切入点方法。
+bean.xml
+<aop:config>
+	<aop:aspect id="tr" ref="tran">
+		<aop:around method="arround" pointcut="execution(* cn.hsx124.service.*.*(..))"/>
+	</aop:aspect>
+</aop:config>
+	
+public class TransactionManager {
+
+	private DBUtil dbutil = new DBUtil();
+
+	public void setDbutil(DBUtil dbutil) {
+		this.dbutil = dbutil;
+	}
+
+	public Object arround(ProceedingJoinPoint pjp) throws Exception {
+		Object rtValue = null;
+		try {
+			dbutil.getConnection().setAutoCommit(false);
+			System.out.println("begin...");
+			Object[] args = pjp.getArgs();
+			rtValue = pjp.proceed(args);
+			dbutil.getConnection().commit();
+			System.out.println("commit...");
+		} catch (Throwable e) {
+			dbutil.getConnection().rollback();
+			System.out.println("rollback...");
+			e.printStackTrace();
+		} finally {
+			dbutil.realease();
+			System.out.println("close...");
+		}
+		return rtValue;
+	}
+}
+
+配置通用切入点表达式
+<aop:config>
+	<aop:aspect id="tr" ref="tran">
+		<!-- 写这里供所有切面使用 -->
+		<aop:pointcut expression="execution(* cn.hsx124.service.*.*(..))" id="pt"/>
+		<aop:around method="arround" pointcut-ref="pt"/>
+		<!-- 写这里只能当前切面访问 -->
+		<!-- <aop:pointcut expression="execution(* cn.hsx124.service.*.*(..))" id="pt"/> -->
+	</aop:aspect>
+</aop:config>
+
+基于注解的Aop
+@Component("tran")
+@Aspect
+public class TransactionManager {
+
+	@Resource(name="dbutil")
+	private DBUtil dbutil ;
+
+	@Pointcut("execution(* cn.hsx124.service.*.*(..))")
+	public void pt(){
+
+	}
+
+	@Before("pt()")
+	public void begin() throws SQLException {
+		System.out.println("begin...");
+		dbutil.getConnection().setAutoCommit(false);
+	}
+
+	@AfterReturning("pt()")
+	public void commit() throws SQLException {
+		System.out.println("commit...");
+		dbutil.getConnection().commit();
+	}
+
+	@AfterThrowing("pt()")
+	public void rollback() throws SQLException {
+		System.out.println("rollback...");
+		dbutil.getConnection().rollback();
+	}
+
+	@After("pt()")
+	public void close() throws SQLException {
+		System.out.println("close...");
+		dbutil.realease();
+	}
+
+	@Around("pt()")
+	public Object arround(ProceedingJoinPoint pjp) throws Exception {
+		Object rtValue = null;
+		try {
+			dbutil.getConnection().setAutoCommit(false);
+			System.out.println("begin...");
+			Object[] args = pjp.getArgs();
+			rtValue = pjp.proceed(args);
+			dbutil.getConnection().commit();
+			System.out.println("commit...");
+		} catch (Throwable e) {
+			dbutil.getConnection().rollback();
+			System.out.println("rollback...");
+			e.printStackTrace();
+		} finally {
+			dbutil.realease();
+			System.out.println("close...");
+		}
+		return rtValue;
+	}
+}
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+JdbcTemplate
+@Test
+public void test004() throws Exception {
+	ResourceBundle rb = ResourceBundle.getBundle("db_info");
+	ComboPooledDataSource dataSource = new ComboPooledDataSource();
+	dataSource.setDriverClass(rb.getString("jdbc.driver"));
+	dataSource.setJdbcUrl(rb.getString("jdbc.url"));
+	dataSource.setUser(rb.getString("jdbc.user"));
+	dataSource.setPassword(rb.getString("jdbc.password"));
+	JdbcTemplate jt = new JdbcTemplate();
+	jt.setDataSource(dataSource);
+	List<Map<String, Object>> queryForList = jt.queryForList("select * from dept");
+	queryForList.forEach(map -> map.forEach((k, v) -> System.out.println(k + v)));
+
+}
+
+update
+
+@Test
+	public void test004() throws Exception {
+		ApplicationContext ac = new ClassPathXmlApplicationContext("bean.xml");
+		JdbcTemplate jt = ac.getBean("jt", JdbcTemplate.class);
+//		jt.update("insert into account values(?,?,?)", 12, "testuser", 1000d);
+		jt.update("delete from account where id = ?",11);
+//		jt.update("update account set name=? where id = ?","jt update",11);
+		RowMapper<Account> rowMapper = new RowMapperImpl();
+		jt.query("select * from account", rowMapper).forEach(System.out::println);
+	}
+}
+
+class RowMapperImpl implements RowMapper<Account> {
+	@Override
+	public Account mapRow(ResultSet rs, int rowNum) throws SQLException {
+		Account ac = new Account();
+		ac.setId(rs.getInt(1));
+		ac.setName(rs.getString(2));
+		ac.setMoney(rs.getDouble(3));
+		return ac;
+	}
+}
+
+BeanPropertyRowMapper
+数据库表中的字段名必须与实体类中的set方法名称一致
+@Test
+public void test004() throws Exception {
+	ApplicationContext ac = new ClassPathXmlApplicationContext("bean.xml");
+	JdbcTemplate jt = ac.getBean("jt", JdbcTemplate.class);
+	jt.query("select * from account", new BeanPropertyRowMapper<Account>(Account.class)).forEach(System.out::println);
+}
+
+@Test
+public void test004() throws Exception {
+	ApplicationContext ac = new ClassPathXmlApplicationContext("bean.xml");
+	JdbcTemplate jt = ac.getBean("jt", JdbcTemplate.class);
+	Integer integer = jt.queryForObject("select count(*) from account where money > ?", Integer.class, 1000);
+	System.out.println(integer);
+}
+
+Spring内置数据源
+DriverManagerDataSource.java
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:p="http://www.springframework.org/schema/p"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:aop="http://www.springframework.org/schema/aop"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.3.xsd
+		http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-4.3.xsd">
+	<bean id="ds" class="org.springframework.jdbc.datasource.DriverManagerDataSource">
+		<property name="driverClassName" value="${jdbc.driver}"></property>
+		<property name="url" value="${jdbc.url}"></property>
+		<property name="username" value="${jdbc.user}"></property>
+		<property name="password" value="${jdbc.password}"></property>
+	</bean>
+	<bean id="jt" class="org.springframework.jdbc.core.JdbcTemplate">
+		<property name="dataSource" ref="ds"></property>
+	</bean>
+	<context:property-placeholder location="db_info.properties"/>
+</beans>
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+Spring的事务管理
+基于xml的声明式事务管理
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:p="http://www.springframework.org/schema/p"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:tx="http://www.springframework.org/schema/tx"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.3.xsd
+		http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-4.3.xsd
+		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-4.3.xsd">
+
+	<bean id="ds" class="org.springframework.jdbc.datasource.DriverManagerDataSource">
+		<property name="driverClassName" value="${jdbc.driver}"></property>
+		<property name="url" value="${jdbc.url}"></property>
+		<property name="username" value="${jdbc.user}"></property>
+		<property name="password" value="${jdbc.password}"></property>
+	</bean>
+
+	<bean id="jt" class="org.springframework.jdbc.core.JdbcTemplate">
+		<property name="dataSource" ref="ds"></property>
+	</bean>
+
+	<bean id="dao" class="cn.hsx124.dao.impl.AccountDAOImpl">
+		<property name="jt" ref="jt"></property>
+	</bean>
+
+	<bean id="service" class="cn.hsx124.service.impl.AccountServiceImpl">
+		<property name="dao" ref="dao"></property>
+	</bean>
+
+<!-- 配置事务管理器Spring内置的 -->
+	<bean id="tran" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+		<property name="dataSource" ref="ds"></property>
+	</bean>
+	<!--
+		isolation="DEFAULT" 配置事务的隔离级别。默认值 DEFAULT使用数据库的默认隔离级别
+		propagation="REQUIRED" 配置事务的传播行为，默认值是REQUIRED，一般增删改用REQUIRED，查询时用SUPPORTS
+		timeout="-1" 指定事务的超时时间，-1永不超时。以秒为单位
+		read-only="false" 配置是否只读事务，默认值是False，读写型事务。指定为True时表示只读，只能用于查询
+		rollback-for="" 用于指定一个异常，当执行产生该异常时事务回滚。产生其他异常事务不回滚，没有默认值任何异常都回滚
+		no-rollback-for=""用于指定一个异常，当执行产生该异常时事务不回滚。产生其他异常事务回滚。没有默认值任何异常都回滚
+	 -->
+	<!-- 配置事务的通知 --> 
+	<tx:advice id="txAdvice"  transaction-manager="tran">
+		<tx:attributes>
+			<tx:method name="*" propagation="REQUIRED" read-only="false"/>
+			<tx:method name="find*" propagation="SUPPORTS" read-only="true"/>
+		</tx:attributes>
+	</tx:advice>
+
+	<aop:config>
+		<!-- 配置切入点表达式 -->
+		<aop:pointcut expression="execution(* cn.hsx124.service..*.*(..))" id="pt"/>
+		<!-- 配置事务通知和切入点表达式的关联 -->
+		<aop:advisor advice-ref="txAdvice" pointcut-ref="pt"/>
+	</aop:config>
+
+	<context:property-placeholder location="db_info.properties"/>
+</beans>
+
+注解
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:p="http://www.springframework.org/schema/p"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:aop="http://www.springframework.org/schema/aop" xmlns:tx="http://www.springframework.org/schema/tx"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.3.xsd
+		http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-4.3.xsd
+		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-4.3.xsd">
+
+	<bean id="ds"
+		class="org.springframework.jdbc.datasource.DriverManagerDataSource">
+		<property name="driverClassName" value="${jdbc.driver}"></property>
+		<property name="url" value="${jdbc.url}"></property>
+		<property name="username" value="${jdbc.user}"></property>
+		<property name="password" value="${jdbc.password}"></property>
+	</bean>
+
+	<bean id="jt" class="org.springframework.jdbc.core.JdbcTemplate">
+		<property name="dataSource" ref="ds"></property>
+	</bean>
+
+	<bean id="dao" class="cn.hsx124.dao.impl.AccountDAOImpl">
+		<property name="jt" ref="jt"></property>
+	</bean>
+
+	<bean id="service" class="cn.hsx124.service.impl.AccountServiceImpl">
+		<property name="dao" ref="dao"></property>
+	</bean>
+
+	<!-- 配置事务管理器Spring内置的 -->
+	<bean id="tran"
+		class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+		<property name="dataSource" ref="ds"></property>
+	</bean>
+	<context:component-scan base-package="cn.hsx124"></context:component-scan>
+	<!-- 配置Spring开启注解事务的支持 -->
+	<tx:annotation-driven transaction-manager="tran" />
+	<context:property-placeholder location="db_info.properties" />
+</beans>
+
+@Transactional
+public class AccountServiceImpl implements IAccountService {
+	private IAccountDAO dao = null;
+
+	public void setDao(IAccountDAO dao) {
+		this.dao = dao;
+	}
+
+	@Override
+	public void saveAccount(Account account) throws Exception {
+		dao.saveAccount(account);
+	}
+}
+
+
+

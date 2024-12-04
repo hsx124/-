@@ -1,0 +1,630 @@
+SqlMapConfig.xml(mybatis全局配置文件)名称可变，运行环境，事务
+mapper.xml配置映射（配置sql语句）
+
+SqlSessionFactory
+SqlSession操作数据库
+Executor
+
+SqlMapConfig.xml
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE configuration PUBLIC "-//mybatis.org//DTD Config 3.0//EN" "http://mybatis.org/dtd/mybatis-3-config.dtd">
+<configuration>
+	<properties resource="db_info.properties">
+
+	</properties>
+	<environments default="development">
+		<environment id="development">
+			<transactionManager type="jdbc" />
+			<dataSource type="POOLED">
+				<property name="driver" value="${jdbc.driver}" />
+				<property name="url" value="${jdbc.url}" />
+				<property name="username" value="${jdbc.user}" />
+				<property name="password" value="${jdbc.password}" />
+			</dataSource>
+		</environment>
+	</environments>
+
+
+	<mappers>
+		<mapper resource="emp.xml" />
+	</mappers>
+</configuration>
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+XXXXMapper.xml
+
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+ <mapper namespace="demo">
+ 	<select id="select" resultType="cn.hsx124.bean.Emp">
+ 		select * from emp
+ 	</select>
+	
+	<select id="select1" parameterType="int" resultType="cn.hsx124.bean.Emp">
+		select * from emp where empno=#{no}
+	</select>
+	
+	<select id="byName" parameterType="String" resultType="cn.hsx124.bean.Emp">
+		select * from emp where job like #{name}
+	</select>
+	
+	<select id="job" parameterType="String" resultType="cn.hsx124.bean.Emp">
+		select * from emp where job like '%${job}%'
+	</select>
+	
+	<insert id="insert" parameterType="cn.hsx124.bean.Emp">
+		<!-- 
+			获取主键值
+			keyProperty自增属性
+		-->
+		<selectKey keyProperty="empno" order="BEFORE" resultType="int">
+			select nvl(max(empno),0)-100 from emp
+			select sceque.nextval() from dual;
+		</selectKey>
+		insert into emp values(#{empno},#{ename},#{job},#{mgr},#{hireDate},#{sal},#{comm},#{deptno})
+	</insert>
+	
+	<delete id="delete" parameterType="int">
+		delete from emp where empno=#{empno}
+	</delete>
+	
+	<update id="update" parameterType="cn.hsx124.bean.Emp">
+		update emp set job=#{job} where empno=#{empno}
+	</update>
+	
+ </mapper>
+ 
+ ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+ 
+		SqlSessionFactoryBuilder builer = new SqlSessionFactoryBuilder();
+		String resource = "sqlMapConfig.xml";
+		InputStream inputStream = Resources.getResourceAsStream(resource);
+		SqlSessionFactory sqlSessionFactory = builer.build(inputStream);
+		SqlSession session = sqlSessionFactory.openSession();
+		//statementId = namespace+id
+		List<Emp> list = session.selectList("demo.select");
+		list.forEach(System.out::println);
+
+		Emp emp = session.selectOne("demo.select1", 7521);
+		System.out.println(emp);
+
+		System.out.println("+++++++++++++++++++++++++++++++++++++++++++++");
+		session.selectList("demo.byName", "%A%").forEach(System.out::println);
+		System.out.println("+++++++++++++++++++++++++++++++++++++++++++++");
+		session.selectList("demo.job", "MA").forEach(System.out::println);
+		
+		Emp emp = new Emp();
+		emp.setEmpno(9999);
+		emp.setEname("Leo");
+		emp.setHireDate(new Date());
+		emp.setDeptno(10);
+		emp.setJob("ANAYL");
+		emp.setMgr(7369);
+		emp.setComm(5000.0);
+		emp.setSal(50000.0);
+		session.insert("demo.insert", emp);
+		session.delete("demo.delete", 9999);
+		Emp e = new Emp();
+		e.setJob("Student");
+		e.setEmpno(9988);;
+		session.update("demo.update", e);
+		
+		session.commit();
+		
+		session.close();
+
+ ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+ 
+※传统DAO
+
+EmpDAO.java
+
+package cn.hsx124.dao;
+import java.util.List;
+import cn.hsx124.bean.Emp;
+public interface EmpDAO {
+	public List<Emp> selectAll(Integer id) throws Exception;
+	public boolean insert(Emp emp) throws Exception;
+}
+
+EmpDAOImpl.java 
+
+package cn.hsx124.dao.impl;
+import java.util.List;
+import org.apache.ibatis.session.SqlSession;
+import cn.hsx124.bean.Emp;
+import cn.hsx124.dao.EmpDAO;
+import cn.hsx124.util.Tool;
+public class EmpDAOImpl implements EmpDAO {
+	@Override
+	public List<Emp> selectAll(Integer id) throws Exception {
+		SqlSession sqlSession = Tool.getSqlSession();
+		List<Emp> selectList = sqlSession.selectList("demo.select");
+		return selectList;
+	}
+	@Override
+	public boolean insert(Emp emp) throws Exception {
+		SqlSession sqlSession = Tool.getSqlSession();
+		int insert = sqlSession.insert("demo.insert", emp);
+		sqlSession.commit();
+		return insert > 0 ? true : false;
+	}
+}
+
+Tool.java
+
+package cn.hsx124.util;
+import java.io.InputStream;
+import org.apache.ibatis.session.SqlSession;
+import org.apache.ibatis.session.SqlSessionFactory;
+import org.apache.ibatis.session.SqlSessionFactoryBuilder;
+public class Tool {
+	private static SqlSessionFactory factory;
+	private static ThreadLocal<SqlSession> sessionLocal = new ThreadLocal<>();
+	static {
+		SqlSessionFactoryBuilder builer = new SqlSessionFactoryBuilder();
+		String name = "sqlMapConfig.xml";
+		InputStream inputStream = Tool.class.getClassLoader().getResourceAsStream(name);
+		factory = builer.build(inputStream);
+	}
+	public static SqlSession getSqlSession() {
+		SqlSession sqlSession = sessionLocal.get();
+		if (sqlSession == null) {
+			sqlSession = factory.openSession();
+			sessionLocal.set(sqlSession);
+		}
+		return sqlSession;
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+※Mapper接口
+ 编写XXXMapper.xml配置文件
+ namespace=Mapper接口的全限定类名（包+类名）
+ 接口里的方法名等于XXXMapper.xml配置文件的statement id
+
+empMapper.xml 
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.hsx124.mapper.EmpMapper">
+	<select id="selectAllByName" parameterType="String" resultType="cn.hsx124.bean.Emp">
+		select * from emp where ename like #{name}
+	</select>
+</mapper>
+ 
+ sqlMapConfig.xml
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE configuration PUBLIC "-//mybatis.org//DTD Config 3.0//EN" "http://mybatis.org/dtd/mybatis-3-config.dtd">
+<configuration>
+	<properties resource="db_info.properties">
+
+	</properties>
+	
+	<typeAliases>
+		<typeAlias type="cn.hsx124.bean.Emp" alias="emp" /><!-- 定义XXXmapper.xml里面resultType的别名 -->
+		<package name="cn.hsx124.bean" /><!-- 扫描整个包以类名为别名 -->
+	</typeAliases>
+	
+	<environments default="development">
+		<environment id="development">
+			<transactionManager type="jdbc" />
+			<dataSource type="POOLED">
+				<property name="driver" value="${jdbc.driver}" />
+				<property name="url" value="${jdbc.url}" />
+				<property name="username" value="${jdbc.user}" />
+				<property name="password" value="${jdbc.password}" />
+			</dataSource>
+		</environment>
+	</environments>
+	<mappers>
+		<mapper resource="emp.xml" />
+		<mapper resource="mapper/empMapper.xml" />
+		<mapper class="cn.hsx124.mapper.EmpMapper"/><!-- 加载单个配置文件要求配置文件与该mapper类同目录同名 -->
+		<package name="cn.hsx124.mapper"/><!-- 批量加载 -->
+	</mappers>
+</configuration>
+ 
+EmpMapper.java 
+public interface EmpMapper {
+	public List<Emp> selectAllByName(String name) throws Exception;
+}
+
+@Test
+public void test004() throws Exception {
+	SqlSession sqlSession = Tool.getSqlSession();
+	EmpMapper mapper = sqlSession.getMapper(EmpMapper.class);
+	String name = "%A%";
+	mapper.selectAllByName(name).forEach(System.out::println);
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+※定义resultType
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.hsx124.mapper.EmpMapper">
+	<resultMap type="cn.hsx124.bean.Emp" id="rt">
+		<!--
+			id表示查询结果中的唯一标识
+			column查询出来的列名
+			property type指定的pojo类型中的属性名
+		-->
+		<id column="no" property="empno"/>
+		<!--
+			result对普通名定义
+			Column 查询出来的列名
+			property type指定的pojo类型中的属性名
+		-->
+		<result column="name" property="ename"/>
+	</resultMap>
+	<select id="findByJob" parameterType="emp" resultMap="rt">
+		select empno no,ename name from emp where job like #{job}
+	</select>
+</mapper>
+
+@Test
+public void test006() throws Exception {
+	SqlSession sqlSession = Tool.getSqlSession();
+	EmpMapper mapper = sqlSession.getMapper(EmpMapper.class);
+	Emp emp = new Emp();
+	emp.setJob("%A%");
+	mapper.findByJob(emp).forEach(System.out::println);
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+※动态SQL
+
+if语句
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.hsx124.mapper.EmpMapper">
+	<select id="findEmp" parameterType="emp" resultType="emp">
+		select * from emp
+		<where>
+			<if test="sal>1000">
+				and sal>#{sal}
+			</if>
+			<if test="job!=null">
+				and job=#{job}
+			</if>
+		</where>
+	</select>
+</mapper>
+
+SQL片段
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.hsx124.mapper.EmpMapper">
+	<sql id="query_user">
+		<if test="sal>1000">
+			and sal>#{sal}
+		</if>
+		<if test="job!=null">
+			and job=#{job}
+		</if>
+	</sql>
+	<select id="findEmp" parameterType="emp" resultType="emp">
+		select * from emp
+		<where>
+			<include refid="query_user"></include>
+		</where>
+	</select>
+</mapper>
+
+for文
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.hsx124.mapper.EmpMapper">
+	<sql id="empno">
+		<foreach collection="empnos" item="no" open="and (" close=")" separator="or">
+			empno=#{no}
+		</foreach>
+	</sql>
+	
+	<sql id="empno_in">
+		<foreach collection="empnos" item="no" open="and empno in (" close=")" separator=",">
+			#{no}
+		</foreach>
+	</sql>
+	
+	<select id="findEmp" parameterType="emp" resultType="emp">
+		select * from emp
+		<where>
+			<include refid="empno"></include>
+		</where>
+	</select>
+</mapper>
+
+@Test
+public void test007() throws Exception {
+	SqlSession sqlSession = Tool.getSqlSession();
+	EmpMapper mapper = sqlSession.getMapper(EmpMapper.class);
+	Emp emp = new Emp();
+	List<Integer> empnos = new ArrayList<>();
+	empnos.add(9991);
+	empnos.add(9988);
+	empnos.add(9990);
+	empnos.add(9989);
+	empnos.add(7698);
+	emp.setEmpnos(empnos);
+	mapper.findEmp(emp).forEach(System.out::println);
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+一对一（resultType）
+empMapper.xml
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.hsx124.mapper.EmpMapper">
+	<select id="findByDeptno" resultType="cn.hsx124.bean.EmpDept">
+		select emp.*,dept.dname,dept.loc from emp,dept where emp.deptno=dept.deptno
+	</select>
+</mapper>
+
+empMapper.java
+import java.util.List;
+import java.util.Map;
+import cn.hsx124.bean.Emp;
+import cn.hsx124.bean.EmpDept;
+public interface EmpMapper {
+	public List<EmpDept> findByDeptno()throws Exception;
+}
+ 
+@Test
+public void test008() throws Exception {
+	SqlSession sqlSession = Tool.getSqlSession();
+	EmpMapper mapper = sqlSession.getMapper(EmpMapper.class);
+
+	mapper.findByDeptno().forEach(System.out::println);
+}
+
+EmpDept.java
+package cn.hsx124.bean;
+public class EmpDept extends Emp {
+	private String dname;
+	private String loc;
+	public String getDname() {
+		return dname;
+	}
+	@Override
+	public String toString() {
+		return "EmpDept [dname=" + dname + ", loc=" + loc + ", "+", toString()=" + super.toString()
+				+ "]";
+	}
+	public void setDname(String dname) {
+		this.dname = dname;
+	}
+	public String getLoc() {
+		return loc;
+	}
+	public void setLoc(String loc) {
+		this.loc = loc;
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+一对一（resultMap）
+empMapper.xml
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.hsx124.mapper.EmpMapper">
+	<resultMap type="cn.hsx124.bean.Emp" id="rtMap">
+		<id column="empno" property="empno"/>
+		<result column="ename" property="ename"/>
+		<result column="job" property="job"/>
+		<result column="mgr" property="mgr"/>
+		<result column="hiredate" property="hireDate"/>
+		<result column="sal" property="sal"/>
+		<result column="comm" property="comm"/>
+		<result column="deptno" property="deptno"/>
+		<association  property="dept" javaType="cn.hsx124.bean.Dept">
+			<id column="deptno" property="deptno"/>
+			<result column="dname" property="dname"/>
+			<result column="loc" property="loc"/>
+		</association>
+	</resultMap>
+	<select id="findByResultMap" resultMap="rtMap">
+		select emp.*,dept.dname,dept.loc from emp,dept where emp.deptno=dept.deptno
+	</select>
+</mapper>
+
+EmpMapper.java
+import java.util.List;
+import java.util.Map;
+import cn.hsx124.bean.Emp;
+import cn.hsx124.bean.EmpDept;
+public interface EmpMapper {
+	public List<Emp> findByResultMap()throws Exception;
+
+}
+
+@Test
+public void test009() throws Exception {
+	SqlSession sqlSession = Tool.getSqlSession();
+	EmpMapper mapper = sqlSession.getMapper(EmpMapper.class);
+	List<Emp> findByResultMap = mapper.findByResultMap();
+	findByResultMap.forEach(System.out::println);
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+一对多
+deptMapper.xml
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.hsx124.mapper.DeptMapper">
+	<resultMap type="cn.hsx124.bean.Dept_copy" id="rtmap">
+		<id column="deptno" property="deptno" />
+		<result column="dname" property="dname" />
+		<result column="loc" property="loc" />
+		<!-- 
+			property:cn.hsx124.bean.Dept_copy的集合属性名
+			ofType:集合属性的类型
+		-->
+		<collection property="emps" ofType="cn.hsx124.bean.Emp_copy">
+			<id column="empno" property="empno" />
+			<result column="ename" property="ename" />
+			<result column="sal" property="sal" />
+		</collection>
+	</resultMap>
+	<select id="selectEmp" resultMap="rtmap">
+		select
+		dept.*,emp.empno,emp.ename,emp.sal from dept ,emp where
+		dept.deptno=emp.deptno
+	</select>
+</mapper>
+ 
+DeptMapper.java
+package cn.hsx124.mapper;
+import java.util.List;
+import cn.hsx124.bean.Dept_copy;
+public interface DeptMapper {
+	public List<Dept_copy> selectEmp() throws Exception;
+}
+public class Dept_copy {
+	private Integer deptno;
+	private String dname;
+	private String loc;
+	private List<Emp_copy> emps;
+	get,setメソッド省略
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+延迟加载
+
+sqlMapConfig.xml
+
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE configuration PUBLIC "-//mybatis.org//DTD Config 3.0//EN" "http://mybatis.org/dtd/mybatis-3-config.dtd">
+<configuration>
+	<properties resource="db_info.properties" />
+	<settings>
+		<!-- 打开延迟开关 默认为false-->
+		<setting name="lazyLoadingEnabled" value="true" />
+		<!-- 将积极加载改为消极加载即按需加载 默认为true-->
+		<setting name="aggressiveLazyLoading" value="false" />
+		<setting name="logImpl" value="STDOUT_LOGGING" />
+	</settings>
+	<typeAliases>
+		<package name="cn.hsx124.bean" />
+	</typeAliases>
+	<environments default="development">
+		<environment id="development">
+			<transactionManager type="jdbc" />
+			<dataSource type="POOLED">
+				<property name="driver" value="${jdbc.driver}" />
+				<property name="url" value="${jdbc.url}" />
+				<property name="username" value="${jdbc.user}" />
+				<property name="password" value="${jdbc.password}" />
+			</dataSource>
+		</environment>
+	</environments>
+	<mappers>
+		<mapper resource="emp.xml" />
+		<package name="cn.hsx124.mapper" />
+	</mappers>
+</configuration>
+
+EmpMapper.java
+public interface EmpMapper {
+	public List<Dept> lazySelect() throws Exception;
+}
+
+
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.hsx124.mapper.EmpMapper">
+	<resultMap type="cn.hsx124.bean.Dept" id="lazyMap">
+		<id column="deptno" property="deptno" />
+		<result column="dname" property="dname" />
+		<result column="loc" property="loc" />
+		<!-- select:指定延迟加载需要执行的statementId-->
+		<collection property="emps" ofType="cn.hsx124.bean.Emp"
+			select="selectEmp" column="deptno"></collection>
+	</resultMap>
+	<select id="selectEmp" parameterType="int" resultType="cn.hsx124.bean.Emp">
+		select * from emp
+	</select>
+	<select id="lazySelect" resultMap="lazyMap">
+		select * from dept
+	</select>
+</mapper>
+
+public class Dept {
+	private Integer deptno;
+	private String dname;
+	private String loc;
+	private List<Emp> emps;
+}
+ 
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+开启二级缓存
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE configuration PUBLIC "-//mybatis.org//DTD Config 3.0//EN" "http://mybatis.org/dtd/mybatis-3-config.dtd">
+<configuration>
+	<properties resource="db_info.properties" />
+	<settings>
+		<setting name="lazyLoadingEnabled" value="true" />
+		<setting name="aggressiveLazyLoading" value="false" />
+		<setting name="logImpl" value="STDOUT_LOGGING" />
+		<setting name="cacheEnabled" value="true"/>开启二级缓存　默认为true--
+	</settings>
+	<typeAliases>
+		<package name="cn.hsx124.bean" />
+	</typeAliases>
+	<environments default="development">
+		<environment id="development">
+			<transactionManager type="jdbc" />
+			<dataSource type="POOLED">
+				<property name="driver" value="${jdbc.driver}" />
+				<property name="url" value="${jdbc.url}" />
+				<property name="username" value="${jdbc.user}" />
+				<property name="password" value="${jdbc.password}" />
+			</dataSource>
+		</environment>
+	</environments>
+	<mappers>
+		<mapper resource="emp.xml" />
+		<package name="cn.hsx124.mapper" />
+	</mappers>
+</configuration>
+
+禁止二级缓存
+<select id="selectEmp" resultMap="rtmap" useCache="false">
+	select
+	dept.*,emp.empno,emp.ename,emp.sal from dept ,emp where
+	dept.deptno=emp.deptno
+</select>
+
+
+
+
+
+
+
+
+
+
+ 
+ 

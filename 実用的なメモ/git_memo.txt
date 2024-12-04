@@ -1,0 +1,130 @@
+初始化本地仓库
+git init
+
+查看状态
+git status
+
+追加git管理文件到暂存区
+git add 文件名/.(全部文件)
+
+从暂存区中删除添加的文件
+git rm --cache 文件名
+
+提交文件到工作区
+git commit -m"comment"
+
+查看版本记录
+git log
+
+简洁记录
+git log --pretty=oneline 
+git log --oneline 只显示过去的
+git reflog 显示全部记录
+
+版本回退
+git reset --hard 索引值
+使用^符号只能往后回退不能往前
+git reset --hard HEAD^  一个^表示后退一步
+git reset --hard HEAD~3 表示后退三步
+--soft
+仅在本地库移动HEAD指针
+
+--mixed
+在本地库移动HEAD指针
+重置暂存区
+
+--hard
+在本地库移动HEAD指针
+重置暂存区
+重置工作区
+
+从本地库中删除一个文件
+git rm 文件名/rm 文件名
+git commit
+
+文件比较
+git diff 文件名
+将工作区中的文件与暂存区中的做比较
+如果不带文件名表示比较多个文件
+
+查看所有分支
+git branch -v
+创建分支
+git branch 分支名
+切换分支
+git checkout 分支名
+
+合并分支
+第一步：切换到接受修改的分支上（master与hot_fix合并）
+
+<<<<<<< HEAD　当前分支的内容
+bbbbbbbbbbbbb master branch
+cccccccccc
+master branch
+=======  另一个分支的内容
+bbbbbbbbbbbbb
+cccccccccc hot_fix
+>>>>>>> hot_fix
+
+第二步：将文件修改至满意程度后保存
+第三步：git add 文件名
+第四步：git commit -m"日志" 此时不加文件名
+
+本地代码推送到github
+首先在本地初始化本地库
+git init
+在github上创建远程库
+地址别名一览
+git remote -v
+添加地址别名
+git remote add origin（别名） github网址
+git push origin 推送的分支名
+git pull origin 拉取的分支名
+
+从本地克隆代码至本地
+git clone http
+git pull = fetch+merge
+
+跨团队合作
+发出请求然后以第三方访问url点击fork
+clone代码至本地
+修改完后push代码至远程代码库
+发送pull requests
+new pull request
+接收pull requests
+点击commits
+files changed审核代码
+merge pull requests
+
+使用eclipse初始化本地仓库
+选中工程右键→Teams→Share Project→Git→出来的对话框user or create repository or ...打钩
+选中工程，create repository,finish
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

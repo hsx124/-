@@ -1,0 +1,19 @@
+—常规运行方式
+安装：npm i -g typescript
+编译：tsc sample.ts
+运行：node sample.js
+
+—简化运行方式
+安装：npm i -g ts-node
+运行：ts-node sample.ts
+
+单行注释
+//
+多行注释
+/*
+*/
+
+
+
+
+

@@ -1,0 +1,53 @@
+首先，Java中的getResourceAsStream?取?目下的指定?源有以下几?：?
+
+一：?取src下的指定?源
+
+????1)、 Class.getResourceAsStream(String path) ： path 不以’/'???默?是从此?所在的包下取?源，以’/'???是从ClassPath根下(即'/'代表src)?取。其只是通?path?造一个??路径，最??是由ClassLoader?取?源。
+
+? ? ? ? ? ? 例：
+
+? ? ? ? ? ? ? ? ? ? A)、在同?目?下：com.x.y 下有?me.class ,同?在同?目?下有?源文件myfile.xml,??使用：me.class.getResourceAsStream("myfile.xml");
+
+? ? ? ? ? ? ? ? ? ? B)、在子目?下：例如：com.x.y 下有?me.class ,同?在 com.x.y.file 目?下有?源文件myfile.xml，???使用me.class.getResourceAsStream("file/myfile.xml");
+
+????2)、 Class.getClassLoader.getResourceAsStream(String path) ：默??是从ClassPath根下?取，path不能以’/'??，最?是由ClassLoader?取?源。
+
+? ? ? ? ? ? 例：
+
+? ? ? ? ? ? ? ? ? ?A)、 不在同?目?下，也不在子目?下：例如：com.x.y 下有?me.class ,同?在 com.x.file 目?下有?源文件myfile.xml，???使用:me.class.getClassLoader.getResourceAsStream("com/x/file/myfile.xml");
+
+二:?取web?目下的指定?源
+
+????1)、 ServletContext. getResourceAsStream(String path)：默?从WebAPP根目?(即:要?布在服?器下的?目的根目?(与src同?的web文件?下))下取?源，path是否以’/'??无所?;
+
+? ? ? ? ? ?例：
+
+? ? ? ? ? ? ? ? A)、在web?目的根目?下有myfile.xml文件,???使用:
+
+getServleContext().getResourceAsStream("myfile.xml");
+
+????2)、Jsp下的application内置?象就是上面的ServletContext的一???。
+
+使用dom4j支持xpath的操作的几?主要形式
+
+   　　第一?形式
+        　　　　/AAA/DDD/BBB： 表示一?一?的，AAA下面 DDD下面的BBB
+    　  第二?形式
+       　　　　 //BBB： 表示和?个名称相同，表示只要名称是BBB，都得到
+         第三?形式
+        　　　　/*: 所有元素
+         第四?形式
+       　　　　BBB[1]：　表示第一个BBB元素
+        　  　　BBB[last()]：表示最后一个BBB元素
+         第五?形式
+        　　　　//BBB[@id]： 表示只要BBB元素上面有id属性，都得到
+         第六?形式
+        　　　　//BBB[@id='b1'] 表示元素名称是BBB,在BBB上面有id属性，并且id的属性?是b1
+
+使用dom4j支持xpath具体操作
+         默?的情况下，dom4j不支持xpath，如果想要在dom4j里面是有xpath，第一?需要，引入支持xpath的jar包，如下：
+
+       
+         在dom4j里面提供了?个方法，用来支持xpath
+       　　　　selectNodes("xpath表?式")，?取多个?点
+　　　　　　 selectSingleNode("xpath表?式")，?取一个?点

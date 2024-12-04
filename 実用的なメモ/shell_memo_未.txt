@@ -1,0 +1,445 @@
+查看Linux的shell解析器
+cat /etc/shells
+
+Centos默认解析器查看
+echo $SHELL
+
+★shell编写规范
+以.sh为后缀
+首行需要设置shell解析器的类型
+#!/bin/bash
+设置当前shell脚本文件以bash解析器运行脚本
+
+★注释格式
+单行注释:# 注释内容
+多行注释：
+:<<!
+	注释内容
+!
+
+★shell脚本文件的执行方式
+
+1.sh解析器执行方式
+	sh shell脚本名
+	相对路径，绝对路径
+2.sh解析器执行方式
+	sh shell脚本名
+	相对路径，绝对路径
+3. ./shell脚本名
+	首先加添加文件的可执行权限chmod a+x shell脚本名
+	运行./shell脚本名
+
+★变量
+环境变量
+系统提供的共享变量
+Linux系统加载shell的配置文件中定义的变量给所有的shell程序使用
+全 局配置文件
+/etc/profile
+/etc/profile.d/*.sh
+/etc/bashrc
+个人配置文件
+当前用户/.bash_profile,/.bashrc
+查看系统环境变量
+env
+查看系统所有变量及函数等
+set
+
+PATH
+设置命令的搜索路径用冒号分隔
+HISTFILE
+显示当前用户执行命令的历史列表文件：/root/.bash_history
+LANG
+设置当前系统的语言环境
+加$
+echo $PATH
+
+自定义变量
+自定义局部变量 限一个脚本中
+变量名=值
+bash环境中变量的值都是字符串，变量的值如果有空格必须使用双引号括起来
+查询变量的值
+$加变量名 ${变量名}→适合拼接
+变量删除unset变量名
+
+自定义常量
+readnoly 变量名
+
+自定义全局变量
+export 变量加 变量加 。。。
+
+特殊变量
+$n,$#,$*,$@,$?,$$
+$n用于接收脚本文件执行时传入的参数 
+$0用于获取脚本文件名
+例如：$1-$9获取第一个到第九个输入参数
+
+$#获取所有输入参数的个数
+$*,$@获取所有输入参数，用于以后输出所有参数
+当使用双引号括起来时，$*获取的所有参数拼接成为一个字符串，格式为"$1 $2 ... $n"
+$@获取一组参数列表对象，格式为"$1" "$2" ... "$n"
+
+for循环
+for 变量 in 列表变量
+do
+命令
+done
+
+for循环
+for (( 初始值;循环控制条件;变量变化 )) 例：for (( i=1;i<="$a";i=i+1))
+do
+命令
+done
+
+$?
+用于获取上一个shell命令的退出状态码，或者是函数的返回值
+0表示成功，非0表示失败
+
+$$获取当前shell的进程的ID号
+ps -aux 获取所有进程
+
+自定义系统环境变量
+重载配置文件 source /etc/profile
+
+shell登录环境执行脚本文件方法
+sh/bash -l/--login 脚本文件
+
+$0识别shell登录环境类型
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////
+String字符串
+var='abc'
+var="abc" 推荐使用
+var=abc
+echo $var1
+:abc
+var2='${var1} hello world'
+echo $var2
+:${var1} hello world
+var3="${var1} hello world"
+:abc hello world
+var3="\"${var1}\" hello world"
+echo $var3
+:"abc" hello 
+echo ${var}helloworld
+:abchelloworld
+echo ${var}helloworld变量与拼接字符之间在不能有空格，有空格的话空格后面的内容会被当做命令解析
+
+获取字符串的长度
+${#变量名}
+string=albdlksfjsl
+echo ${#string}
+字符串的拼接
+var3=${var1}${var2}
+var3="${var1}${var2}"
+var3=${var1}'&'${var2}
+var3=${var1}"&"${var2}
+var3="${var1} ${var2}"
+字符串的截取
+${变量名:start:length}从左边第几个位置开始截取多少长度
+str=abcdefghijklmnopqrstuvwxyz
+echo ${str:0:2}
+ab
+${变量名:start}从左边第几个位置开始往后全部截取
+str=abcdefghijklmnopqrstuvwxyz
+echo ${str:12}
+mnopqrstuvwxyz
+${变量名:0-start:length}从右侧第start个开始往右截取length个
+${变量名:0-start}
+
+${变量名#*char}左侧第一次出现char右侧的全部字符
+${变量名##*char}左侧出现最后一个char右侧的全部字符
+
+${变量名%char*}右侧第一次出现char左侧的全部字符
+${变量名%%char*}右侧出现最后一个char左侧的全部字符
+
+数组
+（）表示数组，元素之间用空格隔开
+nums=(1 3 4 5 6)
+nums=(1 "hello world")
+nums=([0]=1 [2]="shell" [10]=15)
+数组的获取
+${nums[index]}
+获取数组的所有元素
+${arr[@]}
+${arr[*]}
+获取数组的个数
+${#arr[@]}
+${#arr[*]}
+获取数组指定元素的字符长度
+${#arr[2]}
+数组的拼接
+arr1=(1 2 3 4  5)
+arr2=("hello world" "shell")
+arr3=(${arr1[@]} ${arr2[@]})
+echo ${arr3[@]}
+1 2 3 4 5 hello world shell
+数组的删除
+删除数组指定元素的数据
+unset arr3[6]
+删除整个数组
+unset arr3
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+shell内置命令
+alias内置命令
+如何查看一个命令是否是内置命令
+type 命令
+alias pl="ps -aux"
+unalias 别名
+
+echo命令输出字符串
+默认换行输出
+不换行输出
+echo -n 字符串
+输出转义字符
+\c清除结尾换行
+echo -e 转义字符
+echo -e "hello \n world"
+
+read命令
+read [options] [var1,var2...]
+如果没有提供变量名，则读取的数据将存放在环境变量REPLY中
+$REPLY保存read最后一个读入命令的数据
+-n num 读取num个字符，而不是整行字符
+-p prop 显示提示信息，提示内容为prop
+-s 静默模式，不会在屏幕上显示输入字符，当输入密码和其它确认信息的时候有必要。
+-d delimiter 用字符串delimiter指定读取结束的位置，而不是一个换行符
+-e 对功能键进行编码转换
+-r 原本读取不把反斜杠解析为转义字符
+-t second 设置超时时间，单位为秒。如果用户没有在指定时间内输入完成，
+将会返回一个非0的退出状态，表示读取失败
+read -n 1 -p "are you sure delete the data (y/n):" char
+echo
+echo $char
+
+1#!/bin/bash
+2 read -p "input your name and age,hobby please :" name age hobby
+3 echo "name:${name}"
+4 echo "age:${age}"
+5 echo "hobby:${hobby}"
+
+exit命令
+用于退出当前shell环境进程结束运行，并且可以返回一个状态码
+
+declare设置变量的属性
+declare [+/-] [aArxif] [变量名称=设置值]
++/-：+表示取消属性，-表示增加属性
+a:array,设置为普通索引数组
+A：Array，设置为key-value关联数组
+r:readonly,将变量设置为只读，也可以使用readonly
+x:export,设置成环境变量，也可以使用export
+i:int 设置为整形变量
+f:function,设置为一个函数变量
+关联数组
+delcare 变量名=([key]=value [key]=value ...)
+获取指定key的值
+${变量名[key]}
+获取所有值
+${变量名[*]}/${变量名[@]}
+
+关系运算符
+整数比较
+[ 1 -eq 2 ]
+((1>a))
+字符比较
+[[]]遇到特殊字符不需要转义，不会发生word splitting,[]需要转义会发生word splitting
+[ $a == $b ],[ $a != $b ],[ $a < $b ],[ $a > $b ]
+[-z $a]检测字符串长度是否为0
+[-n $a]检测字符串长度是否不为0
+[-$ $a]检测字符串是否不为空
+
+布尔运算符（必须用[]或test命令执行）
+！取反
+-o or
+-a and
+
+逻辑运算([[]],(()) )
+&&,||,!
+
+文件测试运算符([])
+-b file 检测文件是否是块设备文件，如果是返回True,否则False
+-c file 检测文件是否是字符设备文件，如果是返回True,否则False
+-d file 检测文件是否是目录，如果是返回True,否则False
+-f file 检测文件是否是普通文件，如果是返回True,否则False
+-g file 检测文件是否设置了SGID，如果是返回True,否则False
+-k file 检测文件是否设置了粘着位，如果是返回True,否则False
+-p file 检测文件是否是有名管道文件，如果是返回True,否则False
+-u file 检测文件是否设置了SUID文件，如果是返回True,否则False
+-r file 检测文件是否可读，如果是返回True,否则False
+-w file 检测文件是否可写，如果是返回True,否则False
+-x file 检测文件是否可执行，如果是返回True,否则False
+-s file 检测文件是否为空，如果是返回True,否则False
+-e file 检测文件或目录是否存在，如果是返回True,否则False
+file1 -nt file2 file1文件是否比file2文件新
+file1 -ot file2 file1文件是否比file2文件旧
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////
+shell计算命令
+expr \( 10 + 15 \) \* 1 返回25
+expr length 字符串
+如：expr length "abcdefg" 返回7
+expr substr 字符串 star end
+如：expr substr "abcdefg" 1 2 返回ab
+expr index 被查找字符串 需要查找的字符
+如：expr index "itheima" t 返回2
+expr match 字符串 正则表达式
+如：expr match "itheima" ".*m" 返回6
+expr 字符串: 正则表达式
+如：expr "itheima" : ".*m" 返回6
+优点：可以直接输出
+缺点：计算表达里面引用变量使用$,特殊字符需要转义，只能计算一个表达式
+
+
+(())命令
+双小括号(())用于进行数学运算表达式的执行，将数学运算表达式放在(())之间
+可以使用$获取(())表达式命令的结果。
+expr ((10+50))
+((a=9-1))
+((b=a-1))
+((c=a+b))
+
+a=$((1*6))
+b=$((a-1))
+c=$((a+b))
+
+((a>7&&b==C))
+echo $((a+10))
+((a=3+5,b=a+10))
+优点:直接输出，里面直接使用变量名，特殊字符不需要转义。
+缺点:需要获取值以后才能输出
+
+let赋值
+let a=6-1
+不能直接输出
+
+$[表达式]只能进行整数运算，但是只能对单个表达式的计算求值与输出
+不能多表达式计算
+
+bc命令
+Linux简单的计算器，能进行进制转换与计算，可以使用各种数学运算符号
+bc 选项 参数
+-h 帮助信息
+-v 显示命令版本信息
+-l 使用标准数学库，例如使用内置函数就需要使用这个参数
+-i 强制交互
+-w 显示POSIX的警告信息
+-s 使用POSIX标准来处理
+-q 不显示欢迎信息
+bc进入交互模式，quit退出交互模式。
+内置变量
+scale 指定精度，即小数点后的位数，默认为0，
+ibase 指定输入的数字的进制，默认为十进制
+obase 指定输出的数字进制，默认为十进制
+last或者. 获取最近计算打印结果的数字
+如：scale=2;10/3
+
+内置数学函数（使用时选项-l必须开启）
+s(x) 计算x的正弦值，x是弧度值
+。。。。。。
+
+非互动管道运算
+echo "expression" | bc [选项] 参数
+将bc运算结果赋值给变量
+var=`eho "scale=2;10/3" | bc` 此方式兼容性好
+var2=$(eho "scale=2;10/3" | bc) 兼容性差并不是所有linux都支持
+
+非互动输入重定向运算
+1.
+	var=`bc [option] << EOF
+		第一行表达式1
+		第二表达式2
+		EOF`
+2.
+	var=$(bc [option] << EOF
+		第一行表达式1
+		第二表达式2
+		EOF)
+
+流程控制语句
+if else
+if 条件
+then 
+	命令
+fi
+if 条件;then 命令;fi
+
+if 条件
+then 
+	命令
+else
+	命令
+fi
+
+if 条件1
+then
+	命令1
+elif 条件2
+then
+	命令2
+elif 条件3
+then
+	命令3
+...
+else
+	命令N
+fi
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////
+test命令
+相当于[]
+
+case语句
+case 变量名 in
+匹配模式）
+	语句
+	；；
+匹配模式）
+	语句
+	；；
+*）
+	语句
+	；；
+	...
+esac
+
+while [ 条件 ]
+do	
+	命令1
+	命令2
+	...
+	continue;
+	break;
+done
+
+while 条件;do 命令; done;
+
+util [ 条件 ]
+do
+命令
+done
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

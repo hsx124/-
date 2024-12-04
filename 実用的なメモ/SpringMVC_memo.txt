@@ -1,0 +1,967 @@
+SpringMVC环境配置（Maven）
+导入Maven依赖
+Pom.xml
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<groupId>cn.hsx124.springmvc</groupId>
+	<artifactId>springMVCDemo</artifactId>
+	<version>0.0.1-SNAPSHOT</version>
+	<packaging>war</packaging>
+	<properties>
+		<java-version>1.8</java-version>
+		<encoding>utf-8</encoding>
+	</properties>
+	<!-- 配置JDK版本 -->
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<version>3.8.1</version>
+				<configuration>
+					<source>${java-version}</source>
+					<target>${java-version}</target>
+					<encoding>${encoding}</encoding>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
+	<dependencies>
+		<!-- https://mvnrepository.com/artifact/org.springframework/spring-web -->
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-web</artifactId>
+			<version>5.0.2.RELEASE</version>
+		</dependency>
+
+		<!-- https://mvnrepository.com/artifact/org.springframework/spring-webmvc -->
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-webmvc</artifactId>
+			<version>5.0.2.RELEASE</version>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-context</artifactId>
+			<version>5.0.2.RELEASE</version>
+		</dependency>
+		<dependency>
+			<groupId>org.aspectj</groupId>
+			<artifactId>aspectjweaver</artifactId>
+			<version>1.9.1</version>
+		</dependency>
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<version>4.12</version>
+			<!-- <scope>test</scope> -->
+		</dependency>
+		<dependency>
+			<groupId>javax.servlet</groupId>
+			<artifactId>servlet-api</artifactId>
+			<version>3.0-alpha-1</version>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>javax.servlet.jsp</groupId>
+			<artifactId>jsp-api</artifactId>
+			<version>2.0</version>
+			<scope>provided</scope>
+		</dependency>
+	</dependencies>
+</project>
+
+Web.xml
+配置Spring核心控制器
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns="http://java.sun.com/xml/ns/javaee"
+	xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_3_0.xsd"
+	id="WebApp_ID" version="3.0">
+	<display-name>springMVCDemo</display-name>
+	<welcome-file-list>
+		<welcome-file>index.htm</welcome-file>
+		<welcome-file>index.html</welcome-file>
+		<welcome-file>index.jsp</welcome-file>
+	</welcome-file-list>
+	<servlet>
+		<servlet-name>dispatcherServlet</servlet-name>
+		<!-- 配置Spring核心控制器 -->
+		<servlet-class>org.springframework.web.servlet.DispatcherServlet</servlet-class>
+		<!-- 配置servlet初始化参数，告知servlet,Springmvc的配置文件位置 -->
+		<init-param>
+			<param-name>contextConfigLocation</param-name>
+			<param-value>classpath:springmvc.xml</param-value>
+		</init-param>
+		<!-- 配置Servlet启动顺序 -->
+		<load-on-startup>1</load-on-startup>
+	</servlet>
+	<servlet-mapping>
+		<servlet-name>DispatcherServlet</servlet-name>
+		<url-pattern>/</url-pattern>
+	</servlet-mapping>
+</web-app>
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+@RequstMapping请求映射：浏览器请求url保持一致。
+写在方法上：和请求url进行绑定
+写在类上：给访问url进行窄化处理，可以让url变成模块化形式。
+Springmvc.xml
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:mvc="http://www.springframework.org/schema/mvc"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xsi:schemaLocation="http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc-4.3.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.3.xsd">
+	<!-- 配置要扫描的包 -->
+	<context:component-scan base-package="cn.hsx124.controller"></context:component-scan>
+	<!-- 配置Springmvc的视图解析器 -->
+	<bean id="view" class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+		<!-- prefix前缀表示要去哪里查找页面资源 返回值都页面的前缀保持一致-->
+		<property name="prefix" value="/WEB-INF/pages/"></property>
+		<!-- suffix后缀表示查找什么类型 -->
+		<property name="suffix" value=".jsp"></property>
+	</bean>
+</beans>
+
+DemoController.java
+@Controller//把当前类交于Spring管理
+public class DemoController {
+	@RequestMapping("/demo")
+	public String demo(){
+		System.out.println("demo is running ...");
+		return "success";//返回值与页面前缀一致
+	}
+}
+
+@Controller
+@RequestMapping("/test")
+public class DemoController {
+
+	@RequestMapping("/demo")
+	public String demo(){
+		System.out.println("demo is running ...");
+		return "success";//=return "forward:/WEB-INF/pages/success.jsp"
+	}
+}
+
+<a href="${pageContext.request.contextPath }/test/demo">dddd</a>
+
+@RequstMapping
+属性:
+	value用于指定访问url和执行的方法之间的对应关系
+	method用于限定请求的方式 如post,get等。
+	params:用于指定请求url必须的参数要求
+	headers:用于指定请求消息头的信息
+	以上属性两个以上存在时，是并列关系
+	
+@Controller
+@RequestMapping("/test")
+public class DemoController {
+
+	@RequestMapping("/demo")
+	public String demo() {
+		System.out.println("demo is running ...");
+		return "success";
+	}
+	@RequestMapping(value = "/save", method = RequestMethod.POST)
+	public String save() {
+		System.out.println(this.getClass().getSimpleName() + "....");
+		return "success";
+	}
+}	
+
+<body>
+	<a href="${pageContext.request.contextPath }/test/demo">dddd</a>
+	<form action="test/save" method="get">
+		<input type="submit" value="submit"/>
+	</form>
+</body>
+
+
+<body>
+	<a href="test/update?money=150">params</a>
+</body>
+
+@Controller
+@RequestMapping("/test")
+public class DemoController {
+	@RequestMapping(value="/update",params="money=150")
+	public String update() {
+		System.out.println(this.getClass().getName() + "....");
+		return "success";
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+请求参数绑定
+基本类型
+<body>
+	<a href="${pageContext.request.contextPath }/test/findById?id=7">find</a>
+</body>
+
+@Controller
+@RequestMapping("/test")
+public class DemoController {
+	@RequestMapping("/findById")
+	public String find(Integer id) {//请求参数名必须与方法参数名一致
+		System.out.println("find id ;" + id);
+		return "success";
+	}
+}
+
+POJO类型
+<body>
+	<form action="${pageContext.request.contextPath}/test/find" method="post">
+		id:<input type="text" name="id"/><br/>
+		name:<input type="text" name="name"/><br/>
+		money:<input type="text" name="money"/><br/>
+		<input type="submit" value="submit"/>
+	</form>
+</body>
+
+@Controller
+@RequestMapping("/test")
+public class DemoController {
+	@RequestMapping("/find")
+	public String find(Account account) {
+		System.out.println(account);
+		return "success";
+	}
+}
+
+public class Account {
+	private Integer id;
+	private String name;
+	private Double money;
+	public Integer getId() {
+		return id;
+	}
+	public void setId(Integer id) {
+		this.id = id;
+	}
+	public String getName() {
+		return name;
+	}
+	public void setName(String name) {
+		this.name = name;
+	}
+	public Double getMoney() {
+		return money;
+	}
+	public void setMoney(Double money) {
+		this.money = money;
+	}
+	@Override
+	public String toString() {
+		return "Account [id=" + id + ", name=" + name + ", money=" + money + "]";
+	}
+}
+Pojo类型中有其他的POJO类型
+<body>
+	<form action="${pageContext.request.contextPath}/test/find" method="post">
+		id:<input type="text" name="id"/><br/>
+		name:<input type="text" name="name"/><br/>
+		money:<input type="text" name="money"/><br/>
+		provinceName:<input type="text" name="address.provinceName"/><br/>
+		cityName:<input type="text" name="address.cityName"/><br/>
+		<input type="submit" value="submit"/>
+	</form>
+</body>
+
+@Controller
+@RequestMapping("/test")
+public class DemoController {
+	@RequestMapping("/find")
+	public String find(Account account) {
+		System.out.println(account);
+		return "success";
+	}
+}
+
+配置Spring内置过滤器
+web.xml
+<!-- 配置SpringMVC编码过滤器 -->
+<filter>
+	<filter-name>CharacterEncodingFilter</filter-name>
+	<filter-class>org.springframework.web.filter.CharacterEncodingFilter</filter-class>
+	<!-- 配置过滤中的属性值 -->
+	<init-param>
+		<param-name>encoding</param-name>
+		<param-value>UTF-8</param-value>
+	</init-param>
+	<!-- 启动过滤器 -->
+	<init-param>
+		<param-name>forceEncoding</param-name>
+		<param-value>true</param-value>
+	</init-param>
+</filter>
+<filter-mapping>
+	<filter-name>CharacterEncodingFilter</filter-name>
+	<url-pattern>/*</url-pattern>
+</filter-mapping>
+
+springmvc.xml
+设置静态资源不过滤
+<mvc:resources location="/css/" mapping="/css/*"></mvc:resources>
+<mvc:resources location="/img/" mapping="/img/*"></mvc:resources>
+<mvc:resources location="/javascript/" mapping="/javascript/*"></mvc:resources>
+
+list类型
+<form action="${pageContext.request.contextPath}/test/find" method="post">
+	name:<input type="text" name="name"/><br/>
+	age:<input type="text" name="age"/><br/>
+	accountId:<input type="text" name="accounts[0].id"/><br/>
+	accountName:<input type="text" name="accounts[0].name"/><br/>
+	accountMoney:<input type="text" name="accounts[0].money"/><br/>
+	accountId:<input type="text" name="accounts[1].id"/><br/>
+	accountName:<input type="text" name="accounts[1].name"/><br/>
+	accountMoney:<input type="text" name="accounts[1].money"/><br/>
+	<input type="submit" value="submit"/>
+</form>
+
+Map类型
+<form action="${pageContext.request.contextPath}/test/find" method="post">
+	name:<input type="text" name="name"/><br/>
+	age:<input type="text" name="age"/><br/>
+	accountId:<input type="text" name="mapAccout[1].id"/><br/>
+	accountName:<input type="text" name="mapAccout[1].name"/><br/>
+	accountMoney:<input type="text" name="mapAccout[1].money"/><br/>
+	accountId:<input type="text" name="mapAccout[2].id"/><br/>
+	accountName:<input type="text" name="mapAccout[2].name"/><br/>
+	accountMoney:<input type="text" name="mapAccout[2].money"/><br/>
+	<input type="submit" value="submit"/>
+</form>
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+自定义类型转换器
+<a href="test/find?date=2018-12-12">ddddddd</a>
+先定义自定义转换类，继续Converter接口
+public class StringToDateCoverter implements Converter<String, LocalDate> {
+	@Override
+	public LocalDate convert(String source) {
+		if (StringUtils.isEmpty(source)) {
+			throw new RuntimeException("not data..");
+		}
+		DateTimeFormatter pattern = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+		LocalDate parse = LocalDate.parse(source, pattern);
+		return parse.now();
+	}
+}
+Springmvc.xml
+配置自定义类型转换器，采用注册服务的方式
+<bean id="service" class="org.springframework.context.support.ConversionServiceFactoryBean">
+	<property name="converters">
+		<set>
+			<bean class="cn.hsx124.coverter.StringToDateCoverter"></bean>
+		</set>
+	</property>
+</bean>
+配置Springmvc的注解驱动
+<mvc:annotation-driven conversion-service="service"></mvc:annotation-driven>
+
+获取servletApi
+@Controller
+@RequestMapping("/test")
+public class DemoController {
+	@RequestMapping("/find")
+	public String api(HttpServletRequest request,HttpServletResponse response) {
+		System.out.println(request);
+		System.out.println(response);
+		return "success";
+	}
+}
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+Springmvc中的常用注解
+@RequestParam
+作用：把请求中指定名称的参数给控制器的形参赋值
+属性：
+	value：请求参数的名称
+	required：请求参数中是否必须提供此参数。默认值true表示必须提供否则报错
+	
+当请求参数名称与控制器中形参名称不一致时用@RequestParam请求名称
+<body>
+	<a href="test/param?id=2">prama id...</a>
+</body>
+
+@Controller
+@RequestMapping("/test")
+public class DemoController {
+	@RequestMapping("/param")
+	public String param(@RequestParam("id") Integer paramId) {
+		System.out.println(paramId);
+		return "success";
+	}
+}
+
+<body>
+	<a href="test/param">prama id...</a>
+</body>
+@Controller
+@RequestMapping("/test")
+public class DemoController {
+	@RequestMapping("/param")
+	public String param(@RequestParam(value="id"，required=false) Integer paramId) {
+		System.out.println(paramId);
+		return "success";
+	}
+}
+
+@RequestBody
+作用：用于获取请求体内容，直接使用得到是key=value&key=value..的结构数据，get请求方式不适用
+属性：required是否必须有请求体，默认值true。当取值为true时get请求会报错，如果是false get请求得到是null
+<body>
+	<form action="test/body" method="post">
+		<input type="text" name="username"/><br/>
+		<input type="password" name="password"/><br/>
+		<input type="submit" value="submit"/>
+	</form>
+</body>
+
+@Controller
+@RequestMapping("/test")
+public class DemoController {
+	@RequestMapping("/body")
+	public String body(@RequestBody String body) {
+		System.out.println(body);
+		return "success";
+	}
+}
+
+@PathVariable
+作用：用于绑定url中的占位符。如：/delete/{id},{id}就是url占位符
+支持reset风格url
+属性：
+value：用于指定url中占位符名称。
+required:是否必须提供占位符
+
+<body>
+	<a href="test/pathvariable/1">pathvariable..</a>
+</body>
+
+@Controller
+@RequestMapping("/test")
+public class DemoController {
+	@RequestMapping("/pathvariable/{id}")
+	public String pathvariable(@PathVariable("id") Integer iid) {
+		System.out.println(iid);
+		return "success";
+	}
+}
+
+@RequestHeader/@CookieValue("JSESSIONID")
+用于获取请求消息头
+value：提供消息头名称
+required：是否必须有此消息头
+<body>
+	<a href="test/header">header..</a>
+</body>
+
+@Controller
+@RequestMapping("/test")
+public class DemoController {
+	@RequestMapping("/header")
+	public String header(@RequestHeader("cookie") String header) {
+		System.out.println(header);
+		return "success";
+	}
+}
+
+@ModelAttribute
+作用：用在方法上表示当前方法会在控制器方法执行之前先执行，可修饰有返回值与没有返回值的方法
+	出现在参数上获取指定的数据给参数赋值。
+属性：
+	value：用于获取数据的key。key可以是pojo的属性名称，也可以是map结构的key
+应用场景
+	当表单提交数据不是完整的实体类数据时，保证没有提交数据的字段使用数据库对象原来的数据。
+
+<body>
+	<form action="${pageContext.request.contextPath}/test/model" method="post">
+		name:<input type="text" name="name"/><br/>
+		money:<input type="text" name="money"/><br/>
+		<input type="submit" value="submit"/>
+	</form>
+</body>
+
+@Controller
+@RequestMapping("/test")
+public class DemoController {
+	@RequestMapping("/model")
+	public String model(Account account) {
+		System.out.println(account);
+		return "success";
+	}
+	@ModelAttribute
+	public Account getAccount() {
+		Account a = new Account();
+		a.setId(99);
+		a.setName("Jim");
+		a.setMoney(1000d);
+		return a;
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+视图
+<body>
+	<a href="${pageContext.request.contextPath}/test/string ">string </a>
+	<br />
+	<a href="${pageContext.request.contextPath}/test/void">void</a>
+	<br />
+	<a href="${pageContext.request.contextPath}/test/controller">controller</a>
+</body>
+
+@Controller
+@RequestMapping("/test")
+public class DemoController {
+	//有返回值
+	@RequestMapping("/string")
+	public String testReturnString() {
+		System.out.println("testReturnString run....");
+		return "success";
+	}
+	//无返回值
+	@RequestMapping("/void")
+	public void testVoid() {
+		System.out.println("void....");
+	}
+	//返回控制器
+	@RequestMapping("/controller")
+	public void testController(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		request.getRequestDispatcher("string").forward(request, response);
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+ModelAndView
+Spring提供可以存放响应数据的对象有两个方法
+	setViewName：用于设置逻辑结果视图名称
+	addObject（String,Object）用于设置响应正文的内容，存放的结构是key->value.存放在请求域中
+
+@Controller
+@RequestMapping("/test")
+public class DemoController {
+	@RequestMapping("/modelview")
+	public ModelAndView modelAndView() {
+		ModelAndView mv = new ModelAndView();
+		List<String> data = new ArrayList<>();
+		data.add("test1");
+		data.add("test2");
+		data.add("test3");
+		data.add("test4");
+		mv.addObject("list", data);
+		mv.setViewName("success");
+		return mv;
+	}
+}
+
+success.jsp
+<body>
+	welcome. ${list }
+	<hr />
+	${requestScope.list }
+	<hr />
+	<c:forEach items="${list}" var="str">
+		${str }
+	</c:forEach>
+</body>
+
+Springmvc的转发与重定向
+@Controller
+@RequestMapping("/test")
+public class DemoController {
+	@RequestMapping("/forward")
+	public String testforward() {
+		System.out.println("forward run....");
+		return "forward:/WEB-INF/pages/success.jsp";
+	}
+	@RequestMapping("/redirect")
+	public String testforward() {
+		System.out.println("forward run....");
+		return "redirect:forward";
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+@ResponseBody注解实现响应Json数据
+原生JS实现Ajax异步请求
+<body>
+	<a href="javascript:void(0)">jason..</a>
+<script type="text/javascript">
+	window.onload = function(){
+		var a = document.querySelector("a");
+		a.onclick=function(){
+			ajax()
+		}
+	}
+	function ajax(){
+		var xml = new XMLHttpRequest();
+		xml.open("post","${pageContext.request.contextPath}/test/ajax");
+		xml.onreadystatechange=function(){
+			if(xml.readyState==4){
+				if(xml.status==200){
+					var txt = xml.responseText;
+					var obj =JSON.parse(txt);
+					alert(obj.name);
+				}
+			}
+		}
+		xml.send(null);
+	}
+</script>
+</body>
+
+@Controller
+@RequestMapping("/test")
+public class DemoController {
+	@RequestMapping("/ajax")
+	public void ajax(HttpServletResponse response) throws IOException {
+		Account at = new Account();//重写toString()方法"{\"id\":" + id + ", \"name\":\"" + name + "\", \"money\":" + money + "}";
+		at.setId(1);
+		at.setName("tom");
+		at.setMoney(100d);
+		System.out.println(at);
+		response.getWriter().print(at);
+	}
+}
+
+jQuery
+<body>
+	<a href="javascript:void(0)">jason..</a>
+	<script type="text/javascript">
+		$(function(){
+			$('a').click(function(){
+				$.ajax({
+					type:"post",
+					url:"${pageContext.request.contextPath}/test/ajax",
+					dataType:"json",
+					success:function(data){
+						alert(data.name);
+					}
+				})
+			})
+		})
+	</script>
+</body>
+
+@Controller
+@RequestMapping("/test")
+public class DemoController {
+	@RequestMapping("/ajax")
+	public @ResponseBody Account ajax() {
+		Account at = new Account();
+		at.setId(1);
+		at.setName("tom");
+		at.setMoney(100d);
+		System.out.println(at);
+		return at;
+	}
+}
+
+获取ajax请求参数
+<body>
+	<a href="javascript:void(0)">jason..</a>
+	<script type="text/javascript">
+	var obj ={
+			id:2,
+			name:"Jerry",
+			money:1000.0
+	}
+		$(function(){
+			$('a').click(function(){
+				$.ajax({
+					type:"post",
+					url:"${pageContext.request.contextPath}/test/ajax",
+					dataType:"json",
+					data:JSON.stringify(obj),//请求参数
+					contentType:"application/json;charset=utf-8",//请求参数的格式
+					success:function(data){
+						alert(data.name);
+					}
+				})
+			})
+		})
+	</script>
+</body>
+
+@Controller
+@RequestMapping("/test")
+public class DemoController {
+	@RequestMapping("/ajax")
+	public @ResponseBody Account ajax(@RequestBody Account acount) {
+		Account at = new Account();
+		at.setId(1);
+		at.setName("tom");
+		at.setMoney(100d);
+		System.out.println(acount);
+		System.out.println(at);
+		return at;
+	}
+}
+
+commons-fileupload
+传统表单的上传①
+<body>
+	<form action="test/upload" method="post" enctype="multipart/form-data">
+		username:<input type="text" name="username"/><br/>
+		filename:<input type="file" name="uploadName"/>
+		<input type="submit" value="submit"/>
+	</form>
+</body>
+
+@RequestMapping("/upload")
+public String fileUpload(HttpServletRequest request) throws Exception {
+	boolean isMulti = ServletFileUpload.isMultipartContent(request);
+	// 判断文件是否支持文件上传
+	if (!isMulti) {
+		return "error";
+	}
+	// 创建ServletFileFactory对象
+	DiskFileItemFactory factory = new DiskFileItemFactory();
+	File file = new File("C:\\Users\\shuxi\\Desktop\\temp");
+	factory.setRepository(file);
+	// 创建ServletFileUpload对象
+	ServletFileUpload sfu = new ServletFileUpload(factory);
+	// 解析request,得到FileItem对象集合
+	List<FileItem> listItems = sfu.parseRequest(request);
+	// 判断FileItem是否是文件字段
+	for (FileItem fileItem : listItems) {
+		// 打印输出
+		if (fileItem.isFormField()) {// 表单字段非文件
+			String fileName = fileItem.getFieldName();// 普通字段名
+			String fileValue = fileItem.getString("utf-8");// 普通字段值
+			System.out.println(fileName + fileValue);
+		} else {
+			// 写文件
+			if (!file.exists()) {
+				file.mkdirs();
+			}
+			// ファイル名取得
+			String fileName = fileItem.getName();
+			String uuid = UUID.randomUUID().toString().replace("-", "");
+			File uploadFile = new File(file, uuid + "_" + fileName);
+			fileItem.write(uploadFile);
+			// 删掉临时文件
+			fileItem.delete();
+
+		}
+	}
+	return "success";
+}
+
+springMVC封装后的
+
+表单用上面原生commonfiles例子的
+springmvc.xml
+<!-- 配置Springmvc文件解析器 -->
+id必须为multipartResolver
+<bean id="multipartResolver" class="org.springframework.web.multipart.commons.CommonsMultipartResolver">
+	<property name="maxUploadSize" value="5242880"></property>
+</bean>
+
+@Controller
+@RequestMapping("/test")
+public class DemoController {
+	@RequestMapping("/upload")
+	public String fileUpload(String username, MultipartFile uploadName, HttpServletRequest request) throws Exception {
+		LocalDateTime toDay = LocalDateTime.now();
+		DateTimeFormatter pattern = DateTimeFormatter.ofPattern("yyyyMMdd");
+		String toDayTime = toDay.format(pattern);
+		File file = new File("C:\\Users\\shuxi\\Desktop\\temp");
+		File f = new File(file, toDayTime);
+		if (!f.exists()) {
+			f.mkdirs();
+		}
+		String fileName = uploadName.getOriginalFilename();
+		String uuid = UUID.randomUUID().toString().replace("-", "");
+		uploadName.transferTo(new File(f,uuid + "_" + fileName));
+		System.out.println(fileName);
+		return "success";
+	}
+}
+
+跨服务器间的通讯
+使用jersey-client.Jar
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+Springmvc的异常处理机制
+<body>
+	<form action="test/exception" method="post">
+		username:<input type="text" name="username"/><br/>
+		<input type="submit" value="submit"/>
+	</form>
+</body>
+
+自定义异常类
+public class CustomerException extends Exception {
+	private String message;
+	public CustomerException(String message) {
+		this.message = message;
+	}
+	public String getMessage() {
+		return message;
+	}
+	public void setMessage(String message) {
+		this.message = message;
+	}
+}
+
+自定义异常处理器
+public class ExceptionResover implements HandlerExceptionResolver {
+	@Override
+	public ModelAndView resolveException(HttpServletRequest request, HttpServletResponse response, Object handler,
+			Exception ex) {
+		ex.printStackTrace();
+		CustomerException ce = null;
+		if (ex instanceof CustomerException) {
+			ce = (CustomerException) ex;
+		} else {
+			ce = new CustomerException("system error..");
+		}
+		ModelAndView mv = new ModelAndView();
+		mv.setViewName("error");
+		mv.addObject("errorMessage", ce.getMessage());
+		return mv;
+	}
+}
+错误页面
+<body>
+error:${errorMessage }
+</bod
+
+在Springmvc.xml配置异常处理器
+<bean class="cn.hsx124.except.ExceptionResover"></bean>
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+Springmvc的拦截器
+按拦截器定义顺序调用
+index.jsp
+<body>
+	<a href="test/interceptor">test interceptor..</a>
+</body>
+DemoController.java
+@Controller
+@RequestMapping("/test")
+public class DemoController {
+	@RequestMapping("/interceptor")
+	public String interceptor() {
+		System.out.println("interceptor///");//第二执行
+		return "success";
+	}
+}
+
+public class CustomerInterceptor implements HandlerInterceptor {
+	/*
+	 *当请求到达时先执行此方法
+	 *此方法返回值决定是否放行
+	 *返回true:放行 如果有下一個拦截器执行下一个，如果该拦截器处于最后一个，则执行handler方法(控制器的方法)
+	 *返回false:不放行
+	 */
+	@Override
+	public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler)
+			throws Exception {
+		System.out.println("preHandle...");//第一执行
+		return false;
+	}
+	//按拦截器定义逆序调用
+	//在拦截器链内所有拦截器返回成功调用
+	@Override
+	public void postHandle(HttpServletRequest request, HttpServletResponse response, Object handler,
+			ModelAndView modelAndView) throws Exception {
+		System.out.println(this.getClass().getTypeName()+"postHandle...");//第三执行
+	}
+	//此方法放不施行都会执行（多个拦截器的情况）
+	//只有prehandle方法返回True才调用
+	@Override
+	public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex)
+			throws Exception {
+		System.out.println(this.getClass().getCanonicalName()+"aftercompletion..");//第四执行
+	}
+}
+Springmvc.xml
+配置自定义拦截器
+<mvc:interceptors>
+	<mvc:interceptor>
+		<mvc:mapping path="/**" />
+		<bean class="cn.hsx124.inteceptor.CustomerInterceptor">
+		</bean>
+	</mvc:interceptor>
+	<mvc:interceptor>
+		<mvc:mapping path="/**" />
+		<bean class="cn.hsx124.inteceptor.CustomerInterceptor2">
+		</bean>
+	</mvc:interceptor>
+</mvc:interceptors>
+
+例：
+index.jsp
+<body>
+	<a href="test/main">test interceptor..</a>
+</body>
+
+@Controller
+@RequestMapping("/test")
+public class DemoController {
+	@RequestMapping("/main")
+	public String main(HttpServletRequest request) {
+		System.out.println("main....");
+		return "success";
+	}
+	@RequestMapping("/login")
+	public String login(HttpServletRequest request) {
+		request.getSession().setAttribute("username", "");
+		return "success";
+	}
+}
+Springmvc.xml
+<mvc:interceptors>
+	<mvc:interceptor>
+		<mvc:mapping path="/test/main" />
+		<bean class="cn.hsx124.inteceptor.CustomerInterceptor">
+		</bean>
+	</mvc:interceptor>
+</mvc:interceptors>
+
+CustomerInterceptor.java
+public class CustomerInterceptor implements HandlerInterceptor {
+	/*
+	 * 当请求到达时先执行此方法 此方法返回值决定是否放行 返回true:放行
+	 * 如果有下一個拦截器执行下一个，如果该拦截器处于最后一个，则执行handler方法(控制器的方法) 返回false:不放行
+	 */
+	@Override
+	public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler)
+			throws Exception {
+		System.out.println("preHandle...");
+		if (request.getSession().getAttribute("username") == null) {
+			request.getRequestDispatcher("/WEB-INF/pages/login.jsp").forward(request, response);
+			return false;
+		}
+		return true;
+	}
+	@Override
+	public void postHandle(HttpServletRequest request, HttpServletResponse response, Object handler,
+			ModelAndView modelAndView) throws Exception {
+		System.out.println(this.getClass().getTypeName() + "postHandle...");
+	}
+	@Override
+	public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex)
+			throws Exception {
+		System.out.println(this.getClass().getCanonicalName() + "aftercompletion..");
+	}
+}
+
+login.jsp
+<body>
+	<a href="${pageContext.request.contextPath }/test/login">login..</a>
+</body>
+
+
+
+
+
+
+
+
+
+

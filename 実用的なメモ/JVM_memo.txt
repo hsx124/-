@@ -1,0 +1,20 @@
+JVM内存结构
+1.程序计数器
+作用：记住下一条JVM指令的执行地址
+特点：线程私有的，不会存在内存溢出
+
+2.栈
+设置JVM栈空间大小
+-Xss
+如：-Xss256k
+
+jstack 进程ID 查看线程运行情况
+
+out of memory error java heap space
+堆内存溢出
+
+设置堆内存
+-Xmx
+如：-Xmx8m
+
+18
